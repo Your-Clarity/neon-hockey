@@ -64,6 +64,11 @@
   .qopt.wrong { background:linear-gradient(135deg,#7a0d2a,#ff2bd6); color:#fff; border-color:#ff2bd6; }
   .qopt.dim { opacity:0.4; }
   .qscore { font-size:clamp(13px,3.4vw,18px); font-weight:900; letter-spacing:2px; }
+  #qSkip { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    padding:8px 18px; font-size:clamp(11px,2.6vw,14px); z-index:11;
+    background:rgba(20,28,52,0.95); color:#8aa0c8; border:2px solid #2a3a5c;
+    box-shadow:none; border-radius:999px; }
+  #quizUI:not(.on) #qSkip { display:none; }
 </style>
 </head>
 <body>
@@ -80,6 +85,7 @@
     <div class="qq" id="qqBot">?</div>
     <div class="qopts" id="qoBot"></div>
   </div>
+  <button id="qSkip">SKIP ▸</button>
 </div>
 
 <div class="screen" id="menu">
@@ -88,7 +94,7 @@
   <div class="row">
     <div class="modecard" id="pickHockey"><div class="t c-cyan">AIR HOCKEY</div><div class="d">Drag your paddle · score in their goal</div></div>
     <div class="modecard" id="pickTap"><div class="t c-pink">TAP DUEL</div><div class="d">Wait for GREEN · fastest tap wins</div></div>
-    <div class="modecard" id="pickQuiz"><div class="t c-cyan">SCIENCE QUIZ</div><div class="d">Both answer · point for each correct</div></div>
+    <div class="modecard" id="pickQuiz"><div class="t c-cyan">QUIZ</div><div class="d">Pick a category · both answer · point each correct</div></div>
   </div>
   <div class="board" id="board"></div>
 </div>
@@ -110,12 +116,25 @@
 </div>
 
 <div class="screen hidden" id="quizSetup">
-  <h1>SCIENCE QUIZ</h1>
+  <h1>QUIZ</h1>
   <div class="sub" id="quizInfo">BOTH PLAYERS ANSWER EACH QUESTION<br>1 POINT FOR EACH CORRECT · MOST POINTS WINS</div>
+  <div class="sub">CATEGORY:</div>
+  <div class="scorebtns" id="quizCatBtns" style="flex-wrap:wrap;max-width:560px">
+    <button class="alt" data-cat="9">GENERAL</button>
+    <button class="alt" data-cat="17">SCIENCE</button>
+    <button class="alt" data-cat="22">GEOGRAPHY</button>
+    <button class="alt" data-cat="23">HISTORY</button>
+    <button class="alt" data-cat="20">MYTHOLOGY</button>
+    <button class="alt" data-cat="27">ANIMALS</button>
+    <button class="alt" data-cat="18">COMPUTERS</button>
+    <button class="alt" data-cat="19">MATH</button>
+    <button class="alt" data-cat="mixed">MIXED</button>
+  </div>
   <div class="sub">QUESTIONS:</div>
   <div class="scorebtns" id="quizCountBtns"><button class="alt" data-q="5">5</button><button class="alt" data-q="10">10</button><button class="alt" data-q="15">15</button></div>
   <div class="row"><button id="quizStart">START</button><button class="ghost" data-back>MENU</button></div>
 </div>
+
 
 <script>
 const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
@@ -127,7 +146,7 @@ let W=0,H=0,DPR=1, mode=null, running=false;
 const stats={ hockey:{pink:0,cyan:0}, tap:{pink:0,cyan:0}, quiz:{pink:0,cyan:0} };
 function recordWin(game,winner){ if(winner==='tie')return; stats[game][winner]++; }
 function renderBoard(){
-  const labels={hockey:'AIR HOCKEY',tap:'TAP DUEL',quiz:'SCIENCE QUIZ'};
+  const labels={hockey:'AIR HOCKEY',tap:'TAP DUEL',quiz:'QUIZ'};
   let tp=0,tc=0,rows='';
   for(const k of ['hockey','tap','quiz']){const s=stats[k];tp+=s.pink;tc+=s.cyan;
     const pl=s.pink>s.cyan?'lead':'',cl=s.cyan>s.pink?'lead':'';
@@ -282,8 +301,12 @@ function normalize(item){
   shuffle(opts);
   return {q:decodeHtml(item.question),a:opts,c:opts.indexOf(correct)};
 }
+let quizCat=17; // default Science
+const APPROVED_CATS=[9,17,22,23,20,27,18,19]; // general, science, geo, history, mythology, animals, computers, math
 async function fetchQuestions(n){
-  const url='https://opentdb.com/api.php?amount='+n+'&category=17&type=multiple';
+  let cat=quizCat;
+  if(cat==='mixed'){ cat=APPROVED_CATS[Math.floor(Math.random()*APPROVED_CATS.length)]; }
+  const url='https://opentdb.com/api.php?amount='+n+'&category='+cat+'&type=multiple';
   const res=await fetch(url);
   const data=await res.json();
   if(data.response_code!==0||!data.results||!data.results.length) throw new Error('no questions');
@@ -294,13 +317,15 @@ function fallbackBank(n){
   return order.map(i=>QUESTIONS[i]);
 }
 async function startQuiz(){
+  show(null);
   mode='quiz';qScore1=0;qScore2=0;qIdx=0;
-  show(null);quizUI.classList.add('on');
+  quizUI.classList.add('on');
   document.getElementById('qqTop').textContent='LOADING QUESTIONS...';
   document.getElementById('qqBot').textContent='LOADING QUESTIONS...';
   document.getElementById('qoTop').innerHTML='';document.getElementById('qoBot').innerHTML='';
   try{ quizBank=await fetchQuestions(quizCount); }
   catch(e){ quizBank=fallbackBank(quizCount); }
+  if(mode!=='quiz')return; // user left during fetch
   running=true;loadQuestion();
 }
 function loadQuestion(){qAns1=null;qAns2=null;qLocked=false;
@@ -329,6 +354,13 @@ function revealQuestion(){qLocked=true;const item=quizBank[qIdx];
   document.getElementById('qsTop').textContent='PINK '+qScore1;
   document.getElementById('qsBot').textContent='CYAN '+qScore2;
   setTimeout(()=>{qIdx++;if(qIdx>=quizCount)endQuiz();else loadQuestion();},1500);}
+function skipQuestion(){
+  if(mode!=='quiz'||qLocked)return;
+  qLocked=true; // prevent double-advance
+  qIdx++;
+  if(qIdx>=quizCount)endQuiz(); else loadQuestion();
+}
+document.getElementById('qSkip').onclick=skipQuestion;
 function markReveal(containerId,item,chosen){const opts=document.getElementById(containerId).children;
   for(let i=0;i<opts.length;i++){opts[i].classList.remove('dim');
     if(i===item.c)opts[i].classList.add('correct');
@@ -342,7 +374,14 @@ function endQuiz(){running=false;quizUI.classList.remove('on');winSound();
   document.getElementById('quizStart').textContent='PLAY AGAIN';show(quizSetup);}
 
 function loop(){if(running){if(mode==='hockey'){updateHockey();drawHockey();}else if(mode==='tap'){drawTap();}}requestAnimationFrame(loop);}
-function show(el){[menu,hockeySetup,tapSetup,quizSetup].forEach(s=>s.classList.add('hidden'));quizUI.classList.remove('on');if(el){el.classList.remove('hidden');if(el===menu)renderBoard();}}
+function clearCanvas(){ ctx.clearRect(0,0,W,H); ctx.fillStyle='#070912'; ctx.fillRect(0,0,W,H); }
+function show(el){
+  // any time we show a menu/setup screen, fully stop gameplay and wipe the field
+  running=false; mode=null; clearCanvas();
+  [menu,hockeySetup,tapSetup,quizSetup].forEach(s=>s.classList.add('hidden'));
+  quizUI.classList.remove('on');
+  if(el){ el.classList.remove('hidden'); if(el===menu)renderBoard(); }
+}
 
 document.getElementById('pickHockey').onclick=()=>{ensureAudio();show(hockeySetup);};
 document.getElementById('pickTap').onclick=()=>{ensureAudio();show(tapSetup);};
@@ -350,17 +389,18 @@ document.getElementById('pickQuiz').onclick=()=>{ensureAudio();show(quizSetup);}
 document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{running=false;mode=null;show(menu);});
 
 document.querySelectorAll('#scorebtns button').forEach(b=>b.onclick=()=>{target=+b.dataset.t;document.querySelectorAll('#scorebtns button').forEach(x=>x.style.opacity=0.5);b.style.opacity=1;});
-document.getElementById('hockeyStart').onclick=()=>{mode='hockey';score1=0;score2=0;resize();resetPositions(true);show(null);running=true;serve(Math.random()<0.5?1:-1);};
+document.getElementById('hockeyStart').onclick=()=>{show(null);mode='hockey';score1=0;score2=0;resize();resetPositions(true);running=true;serve(Math.random()<0.5?1:-1);};
 function endHockey(){running=false;winSound();const who=score1>=target?'pink':'cyan';recordWin('hockey',who);
   hockeySetup.querySelector('#hockeyInfo').innerHTML='<div class="winner">'+(who==='pink'?'PINK WINS':'CYAN WINS')+'</div>'+score1+' &nbsp;—&nbsp; '+score2;
   document.getElementById('hockeyStart').textContent='PLAY AGAIN';document.querySelectorAll('#scorebtns button').forEach(x=>x.style.opacity=1);show(hockeySetup);}
 
 document.querySelectorAll('#tapScoreBtns button').forEach(b=>b.onclick=()=>{tapTarget=+b.dataset.t;document.getElementById('tapTargetLabel').textContent=tapTarget;document.querySelectorAll('#tapScoreBtns button').forEach(x=>x.style.opacity=0.5);b.style.opacity=1;});
-document.getElementById('tapStart').onclick=()=>{mode='tap';tapScore1=0;tapScore2=0;resize();show(null);running=true;startTapRound();};
+document.getElementById('tapStart').onclick=()=>{show(null);mode='tap';tapScore1=0;tapScore2=0;resize();running=true;startTapRound();};
 function endTap(){running=false;winSound();const who=tapScore1>tapScore2?'pink':'cyan';recordWin('tap',who);
   tapSetup.querySelector('#tapInfo').innerHTML='<div class="winner">'+(who==='pink'?'PINK WINS':'CYAN WINS')+'</div>PINK '+tapScore1+' &nbsp;—&nbsp; CYAN '+tapScore2;
   document.getElementById('tapStart').textContent='PLAY AGAIN';show(tapSetup);}
 
+document.querySelectorAll('#quizCatBtns button').forEach(b=>b.onclick=()=>{quizCat=b.dataset.cat==='mixed'?'mixed':+b.dataset.cat;document.querySelectorAll('#quizCatBtns button').forEach(x=>x.style.opacity=0.5);b.style.opacity=1;});
 document.querySelectorAll('#quizCountBtns button').forEach(b=>b.onclick=()=>{quizCount=+b.dataset.q;document.querySelectorAll('#quizCountBtns button').forEach(x=>x.style.opacity=0.5);b.style.opacity=1;});
 document.getElementById('quizStart').onclick=()=>startQuiz();
 
