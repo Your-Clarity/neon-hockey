@@ -408,13 +408,20 @@ let terrain=[], tanks=null, shell=null, tankTurnP=1, tankWind=0, tankBusy=false;
 const tankCtl=document.getElementById('tankCtl');
 function genTerrain(){
   terrain=new Array(Math.ceil(W)+1);
-  // gentle rolling hills in the middle band; flat-ish near top & bottom for tanks
-  const midY=H*0.5, amp=H*0.16;
-  const f1=0.004+Math.random()*0.004, f2=0.011+Math.random()*0.006, ph=Math.random()*6;
+  // baseline sits low (bottom third); gentle hill in the middle that shells can clear
+  const baseY=H*0.72, amp=H*0.07;
+  const f1=0.003+Math.random()*0.002, ph=Math.random()*6;
+  // a single soft central mound so there's something to arc over, but not a wall
   for(let x=0;x<=W;x++){
-    const h=midY + Math.sin(x*f1+ph)*amp + Math.sin(x*f2+ph*2)*amp*0.4;
-    terrain[x]=h;
+    const roll=Math.sin(x*f1+ph)*amp;
+    const mound=Math.exp(-Math.pow((x-W/2)/(W*0.18),2))*H*0.12; // bump in middle
+    terrain[x]=baseY - mound + roll;
   }
+  flattenPad(W*0.16); flattenPad(W*0.84); // level ground under each tank
+}
+function flattenPad(cx){
+  const r=Math.round(W*0.05); const y=terrain[Math.round(clamp(cx,0,W))];
+  for(let x=Math.max(0,Math.round(cx-r));x<=Math.min(W,Math.round(cx+r));x++) terrain[x]=y;
 }
 function terrainAt(x){ x=Math.round(clamp(x,0,W)); return terrain[x]; }
 function placeTanks(){
@@ -446,13 +453,12 @@ function fireTank(){
   const pow=+document.getElementById('tankPower').value;
   const t=tanks[tankTurnP-1];
   const speed=pow*0.16;
-  // player 1 (top) fires downward, player 2 (bottom) fires upward
   const rad=ang*Math.PI/180;
-  const dir = tankTurnP===1 ? 1 : -1;          // vertical direction
-  const aimRight = t.x < W/2;                    // shoot toward the other tank
+  const aimRight = t.x < W/2;                 // shoot toward the other tank
+  // both tanks sit on the ground and fire UP and across (negative y = up)
   const vx=Math.cos(rad)*speed*(aimRight?1:-1);
-  const vy=Math.sin(rad)*speed*dir;
-  shell={x:t.x, y:t.y-14*dir, vx:vx, vy:vy};
+  const vy=-Math.sin(rad)*speed;
+  shell={x:t.x+(aimRight?16:-16), y:t.y-18, vx:vx, vy:vy};
   beep(300,0.08,'square',0.18);
 }
 function updateTank(){
@@ -473,13 +479,13 @@ function updateTank(){
   if(shell.y>H){ missTank(); return; }
 }
 function craterTank(cx){
-  const r=26;
+  const r=22;
   for(let x=Math.max(0,Math.round(cx-r));x<=Math.min(W,Math.round(cx+r));x++){
-    const d=Math.abs(x-cx); const drop=Math.sqrt(Math.max(0,r*r-d*d))*0.6;
+    // don't erode the ground under either tank (keeps them from sinking)
+    if(Math.abs(x-tanks[0].x)<24||Math.abs(x-tanks[1].x)<24) continue;
+    const d=Math.abs(x-cx); const drop=Math.sqrt(Math.max(0,r*r-d*d))*0.5;
     terrain[x]=Math.min(H, terrain[x]+drop);
   }
-  // resettle tanks on new ground
-  for(const tk of tanks) tk.y=terrainAt(tk.x);
 }
 function hitTank(tk){
   goalSound();
@@ -496,36 +502,54 @@ function missTank(){
 }
 function drawTank(){
   ctx.clearRect(0,0,W,H);
-  // sky
   ctx.fillStyle='#070912'; ctx.fillRect(0,0,W,H);
-  // terrain fill
   ctx.beginPath(); ctx.moveTo(0,H);
   for(let x=0;x<=W;x+=3){ ctx.lineTo(x,terrain[x]); }
   ctx.lineTo(W,H); ctx.closePath();
   ctx.fillStyle='#13203f'; ctx.fill();
   ctx.strokeStyle='rgba(120,150,220,0.5)'; ctx.lineWidth=2;
   ctx.beginPath(); for(let x=0;x<=W;x+=3){ x===0?ctx.moveTo(x,terrain[x]):ctx.lineTo(x,terrain[x]); } ctx.stroke();
-  // tanks
   for(const tk of tanks) drawTankBody(tk);
-  // shell
+  // aim guide for the active player (only when not mid-shot)
+  if(!shell && tanks){ drawAimGuide(); }
   if(shell){ drawCircle(shell.x,shell.y,5,'#fff','#fff',16); }
-  // hit counters
   ctx.font='900 '+Math.min(W,H)*0.05+'px Orbitron'; ctx.textBaseline='top';
   ctx.textAlign='left'; ctx.fillStyle='#ff6ad5'; ctx.fillText('PINK '+tankHits1, 14, 14);
   ctx.textAlign='right'; ctx.fillStyle='#21ffce'; ctx.fillText('CYAN '+tankHits2, W-14, 14);
 }
+function currentAimRad(){
+  const ang=+document.getElementById('tankAngle').value;
+  return ang*Math.PI/180;
+}
 function drawTankBody(tk){
-  ctx.save();
-  ctx.shadowColor=tk.color; ctx.shadowBlur=18; ctx.fillStyle=tk.color;
-  // hull
-  ctx.fillRect(tk.x-16, tk.y-12, 32, 12);
-  // turret
-  ctx.beginPath(); ctx.arc(tk.x, tk.y-12, 8, Math.PI, 0); ctx.fill();
-  // barrel pointing toward enemy
+  const active = tanks[tankTurnP-1]===tk;
   const aimRight = tk.x < W/2;
-  ctx.lineWidth=4; ctx.strokeStyle=tk.color;
-  ctx.beginPath(); ctx.moveTo(tk.x, tk.y-14);
-  ctx.lineTo(tk.x+(aimRight?18:-18), tk.y-22); ctx.stroke();
+  ctx.save();
+  ctx.shadowColor=tk.color; ctx.shadowBlur=active?22:10; ctx.fillStyle=tk.color;
+  ctx.globalAlpha = active?1:0.55;
+  ctx.fillRect(tk.x-16, tk.y-12, 32, 12);
+  ctx.beginPath(); ctx.arc(tk.x, tk.y-12, 8, Math.PI, 0); ctx.fill();
+  // barrel: active tank uses the live slider angle; idle tank a neutral 45
+  const rad = active ? currentAimRad() : Math.PI/4;
+  const bx = Math.cos(rad)*22*(aimRight?1:-1);
+  const by = -Math.sin(rad)*22;
+  ctx.lineWidth=5; ctx.strokeStyle=tk.color; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(tk.x, tk.y-14); ctx.lineTo(tk.x+bx, tk.y-14+by); ctx.stroke();
+  ctx.restore();
+}
+function drawAimGuide(){
+  const t=tanks[tankTurnP-1]; if(!t)return;
+  const aimRight=t.x<W/2; const rad=currentAimRad();
+  const pow=+document.getElementById('tankPower').value; const speed=pow*0.16;
+  // simulate a faint dotted preview of the arc (ignoring wind, as a guide)
+  let x=t.x+(aimRight?16:-16), y=t.y-18;
+  let vx=Math.cos(rad)*speed*(aimRight?1:-1), vy=-Math.sin(rad)*speed;
+  ctx.save(); ctx.fillStyle=t.color; ctx.globalAlpha=0.5;
+  for(let i=0;i<40;i++){
+    x+=vx; y+=vy; vy+=0.18;
+    if(y>terrainAt(x)||x<0||x>W) break;
+    if(i%2===0){ ctx.beginPath(); ctx.arc(x,y,2,0,7); ctx.fill(); }
+  }
   ctx.restore();
 }
 function endTank(){
