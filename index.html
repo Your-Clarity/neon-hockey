@@ -69,6 +69,17 @@
     background:rgba(20,28,52,0.95); color:#8aa0c8; border:2px solid #2a3a5c;
     box-shadow:none; border-radius:999px; }
   #quizUI:not(.on) #qSkip { display:none; }
+
+  #tankCtl { position:fixed; left:50%; bottom:14px; transform:translateX(-50%); z-index:11;
+    display:none; flex-direction:column; gap:8px; width:min(440px,92vw);
+    background:rgba(10,16,34,0.92); border:2px solid #2a3a5c; border-radius:16px; padding:12px 16px; }
+  #tankCtl.on { display:flex; }
+  #tankTurn { text-align:center; font-weight:900; letter-spacing:2px; font-size:clamp(14px,3.6vw,18px); }
+  .tctlrow { display:flex; align-items:center; gap:10px; }
+  .tlbl { color:#8aa0c8; font-size:11px; letter-spacing:1px; width:54px; }
+  .tval { color:#dfe7f7; font-size:13px; width:46px; text-align:right; }
+  #tankCtl input[type=range] { flex:1; accent-color:#21ffce; height:26px; }
+  #tankFire { padding:12px; font-size:clamp(14px,3.6vw,17px); }
 </style>
 </head>
 <body>
@@ -95,6 +106,7 @@
     <div class="modecard" id="pickHockey"><div class="t c-cyan">AIR HOCKEY</div><div class="d">Drag your paddle · score in their goal</div></div>
     <div class="modecard" id="pickTap"><div class="t c-pink">TAP DUEL</div><div class="d">Wait for GREEN · fastest tap wins</div></div>
     <div class="modecard" id="pickQuiz"><div class="t c-cyan">QUIZ</div><div class="d">Pick a category · both answer · point each correct</div></div>
+    <div class="modecard" id="pickTank"><div class="t c-pink">TANK DUEL</div><div class="d">Aim · power · fire over the hills · first to 3 hits</div></div>
   </div>
   <div class="board" id="board"></div>
 </div>
@@ -134,20 +146,37 @@
   <div class="row"><button id="quizStart">START</button><button class="ghost" data-back>MENU</button></div>
 </div>
 
+<div class="screen hidden" id="tankSetup">
+  <h1>TANK DUEL</h1>
+  <div class="sub" id="tankInfo">TAKE TURNS · SET ANGLE &amp; POWER · FIRE<br>SHELLS ARC WITH GRAVITY · WIND VARIES EACH SHOT<br>PINK TANK TOP · CYAN TANK BOTTOM</div>
+  <div class="sub">FIRST TO:</div>
+  <div class="scorebtns" id="tankTargetBtns"><button class="alt" data-t="3">3</button><button class="alt" data-t="5">5</button><button class="alt" data-t="7">7</button></div>
+  <div class="row"><button id="tankStart">START</button><button class="ghost" data-back>MENU</button></div>
+</div>
+
+<!-- Tank in-game control bar -->
+<div id="tankCtl">
+  <div id="tankTurn">PINK'S TURN</div>
+  <div class="tctlrow"><span class="tlbl">ANGLE</span><input type="range" id="tankAngle" min="10" max="80" value="45"><span class="tval" id="tankAngleV">45°</span></div>
+  <div class="tctlrow"><span class="tlbl">POWER</span><input type="range" id="tankPower" min="20" max="100" value="60"><span class="tval" id="tankPowerV">60</span></div>
+  <button id="tankFire">FIRE ▸</button>
+</div>
+
 
 <script>
 const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
 const menu=document.getElementById('menu'), hockeySetup=document.getElementById('hockeySetup'),
       tapSetup=document.getElementById('tapSetup'), quizSetup=document.getElementById('quizSetup'),
+      tankSetup=document.getElementById('tankSetup'),
       quizUI=document.getElementById('quizUI');
 let W=0,H=0,DPR=1, mode=null, running=false;
 
-const stats={ hockey:{pink:0,cyan:0}, tap:{pink:0,cyan:0}, quiz:{pink:0,cyan:0} };
+const stats={ hockey:{pink:0,cyan:0}, tap:{pink:0,cyan:0}, quiz:{pink:0,cyan:0}, tank:{pink:0,cyan:0} };
 function recordWin(game,winner){ if(winner==='tie')return; stats[game][winner]++; }
 function renderBoard(){
-  const labels={hockey:'AIR HOCKEY',tap:'TAP DUEL',quiz:'QUIZ'};
+  const labels={hockey:'AIR HOCKEY',tap:'TAP DUEL',quiz:'QUIZ',tank:'TANK DUEL'};
   let tp=0,tc=0,rows='';
-  for(const k of ['hockey','tap','quiz']){const s=stats[k];tp+=s.pink;tc+=s.cyan;
+  for(const k of ['hockey','tap','quiz','tank']){const s=stats[k];tp+=s.pink;tc+=s.cyan;
     const pl=s.pink>s.cyan?'lead':'',cl=s.cyan>s.pink?'lead':'';
     rows+='<tr><td class="l">'+labels[k]+'</td><td class="pk '+pl+'">'+s.pink+'</td><td class="cy '+cl+'">'+s.cyan+'</td></tr>';}
   const tpl=tp>tc?'lead':'',tcl=tc>tp?'lead':'';
@@ -373,19 +402,155 @@ function endQuiz(){running=false;quizUI.classList.remove('on');winSound();
   quizSetup.querySelector('#quizInfo').innerHTML='<div class="winner">'+txt+'</div>PINK '+qScore1+' &nbsp;—&nbsp; CYAN '+qScore2;
   document.getElementById('quizStart').textContent='PLAY AGAIN';show(quizSetup);}
 
-function loop(){if(running){if(mode==='hockey'){updateHockey();drawHockey();}else if(mode==='tap'){drawTap();}}requestAnimationFrame(loop);}
+/* ===================== TANK DUEL ===================== */
+let tankTarget=3, tankHits1=0, tankHits2=0; // pink=player1(top), cyan=player2(bottom)
+let terrain=[], tanks=null, shell=null, tankTurnP=1, tankWind=0, tankBusy=false;
+const tankCtl=document.getElementById('tankCtl');
+function genTerrain(){
+  terrain=new Array(Math.ceil(W)+1);
+  // gentle rolling hills in the middle band; flat-ish near top & bottom for tanks
+  const midY=H*0.5, amp=H*0.16;
+  const f1=0.004+Math.random()*0.004, f2=0.011+Math.random()*0.006, ph=Math.random()*6;
+  for(let x=0;x<=W;x++){
+    const h=midY + Math.sin(x*f1+ph)*amp + Math.sin(x*f2+ph*2)*amp*0.4;
+    terrain[x]=h;
+  }
+}
+function terrainAt(x){ x=Math.round(clamp(x,0,W)); return terrain[x]; }
+function placeTanks(){
+  const x1=W*0.16, x2=W*0.84;
+  tanks=[
+    {x:x1,y:terrainAt(x1),color:'#ff2bd6',player:1},
+    {x:x2,y:terrainAt(x2),color:'#00e5ff',player:2}
+  ];
+}
+function startTank(){
+  show(null); mode='tank'; running=true;
+  tankHits1=0;tankHits2=0; tankTurnP=Math.random()<0.5?1:2;
+  resize(); genTerrain(); placeTanks(); shell=null; tankBusy=false;
+  newTankTurn();
+  tankCtl.classList.add('on');
+}
+function newTankTurn(){
+  tankBusy=false; shell=null;
+  tankWind=(Math.random()*2-1)*0.06; // sideways accel
+  const turnEl=document.getElementById('tankTurn');
+  const windStr=(tankWind>=0?'▸ ':'◂ ')+Math.abs(tankWind*100).toFixed(0);
+  turnEl.textContent=(tankTurnP===1?"PINK'S TURN":"CYAN'S TURN")+'   WIND '+windStr;
+  turnEl.style.color=tankTurnP===1?'#ff6ad5':'#21ffce';
+}
+function fireTank(){
+  if(mode!=='tank'||tankBusy)return;
+  tankBusy=true;
+  const ang=+document.getElementById('tankAngle').value;
+  const pow=+document.getElementById('tankPower').value;
+  const t=tanks[tankTurnP-1];
+  const speed=pow*0.16;
+  // player 1 (top) fires downward, player 2 (bottom) fires upward
+  const rad=ang*Math.PI/180;
+  const dir = tankTurnP===1 ? 1 : -1;          // vertical direction
+  const aimRight = t.x < W/2;                    // shoot toward the other tank
+  const vx=Math.cos(rad)*speed*(aimRight?1:-1);
+  const vy=Math.sin(rad)*speed*dir;
+  shell={x:t.x, y:t.y-14*dir, vx:vx, vy:vy};
+  beep(300,0.08,'square',0.18);
+}
+function updateTank(){
+  if(!shell)return;
+  shell.vy += 0.18;          // gravity
+  shell.vx += tankWind;      // wind
+  shell.x += shell.vx;
+  shell.y += shell.vy;
+  // off sides
+  if(shell.x<0||shell.x>W){ missTank(); return; }
+  // hit a tank?
+  for(const tk of tanks){
+    if(tk.player===tankTurnP) continue; // can't hit self
+    if(Math.hypot(shell.x-tk.x, shell.y-(tk.y-10))<22){ hitTank(tk); return; }
+  }
+  // hit terrain?
+  if(shell.y>=terrainAt(shell.x)){ craterTank(shell.x); missTank(); return; }
+  if(shell.y>H){ missTank(); return; }
+}
+function craterTank(cx){
+  const r=26;
+  for(let x=Math.max(0,Math.round(cx-r));x<=Math.min(W,Math.round(cx+r));x++){
+    const d=Math.abs(x-cx); const drop=Math.sqrt(Math.max(0,r*r-d*d))*0.6;
+    terrain[x]=Math.min(H, terrain[x]+drop);
+  }
+  // resettle tanks on new ground
+  for(const tk of tanks) tk.y=terrainAt(tk.x);
+}
+function hitTank(tk){
+  goalSound();
+  if(tankTurnP===1)tankHits1++; else tankHits2++;
+  shell=null;
+  if(tankHits1>=tankTarget||tankHits2>=tankTarget){ setTimeout(endTank,500); return; }
+  document.getElementById('tankTurn').textContent=(tankTurnP===1?'PINK':'CYAN')+' HITS!';
+  setTimeout(()=>{ if(mode!=='tank')return; tankTurnP=tankTurnP===1?2:1; newTankTurn(); },900);
+}
+function missTank(){
+  shell=null;
+  beep(150,0.18,'sawtooth',0.18);
+  setTimeout(()=>{ if(mode!=='tank')return; tankTurnP=tankTurnP===1?2:1; newTankTurn(); },700);
+}
+function drawTank(){
+  ctx.clearRect(0,0,W,H);
+  // sky
+  ctx.fillStyle='#070912'; ctx.fillRect(0,0,W,H);
+  // terrain fill
+  ctx.beginPath(); ctx.moveTo(0,H);
+  for(let x=0;x<=W;x+=3){ ctx.lineTo(x,terrain[x]); }
+  ctx.lineTo(W,H); ctx.closePath();
+  ctx.fillStyle='#13203f'; ctx.fill();
+  ctx.strokeStyle='rgba(120,150,220,0.5)'; ctx.lineWidth=2;
+  ctx.beginPath(); for(let x=0;x<=W;x+=3){ x===0?ctx.moveTo(x,terrain[x]):ctx.lineTo(x,terrain[x]); } ctx.stroke();
+  // tanks
+  for(const tk of tanks) drawTankBody(tk);
+  // shell
+  if(shell){ drawCircle(shell.x,shell.y,5,'#fff','#fff',16); }
+  // hit counters
+  ctx.font='900 '+Math.min(W,H)*0.05+'px Orbitron'; ctx.textBaseline='top';
+  ctx.textAlign='left'; ctx.fillStyle='#ff6ad5'; ctx.fillText('PINK '+tankHits1, 14, 14);
+  ctx.textAlign='right'; ctx.fillStyle='#21ffce'; ctx.fillText('CYAN '+tankHits2, W-14, 14);
+}
+function drawTankBody(tk){
+  ctx.save();
+  ctx.shadowColor=tk.color; ctx.shadowBlur=18; ctx.fillStyle=tk.color;
+  // hull
+  ctx.fillRect(tk.x-16, tk.y-12, 32, 12);
+  // turret
+  ctx.beginPath(); ctx.arc(tk.x, tk.y-12, 8, Math.PI, 0); ctx.fill();
+  // barrel pointing toward enemy
+  const aimRight = tk.x < W/2;
+  ctx.lineWidth=4; ctx.strokeStyle=tk.color;
+  ctx.beginPath(); ctx.moveTo(tk.x, tk.y-14);
+  ctx.lineTo(tk.x+(aimRight?18:-18), tk.y-22); ctx.stroke();
+  ctx.restore();
+}
+function endTank(){
+  running=false; tankCtl.classList.remove('on'); winSound();
+  const who=tankHits1>=tankTarget?'pink':'cyan'; recordWin('tank',who);
+  document.getElementById('tankInfo').innerHTML='<div class="winner">'+(who==='pink'?'PINK WINS':'CYAN WINS')+'</div>PINK '+tankHits1+' &nbsp;—&nbsp; CYAN '+tankHits2;
+  document.getElementById('tankStart').textContent='PLAY AGAIN';
+  show(tankSetup);
+}
+
+function loop(){if(running){if(mode==='hockey'){updateHockey();drawHockey();}else if(mode==='tap'){drawTap();}else if(mode==='tank'){updateTank();drawTank();}}requestAnimationFrame(loop);}
 function clearCanvas(){ ctx.clearRect(0,0,W,H); ctx.fillStyle='#070912'; ctx.fillRect(0,0,W,H); }
 function show(el){
   // any time we show a menu/setup screen, fully stop gameplay and wipe the field
   running=false; mode=null; clearTapTimers(); clearCanvas();
-  [menu,hockeySetup,tapSetup,quizSetup].forEach(s=>s.classList.add('hidden'));
+  [menu,hockeySetup,tapSetup,quizSetup,tankSetup].forEach(s=>s.classList.add('hidden'));
   quizUI.classList.remove('on');
+  tankCtl.classList.remove('on');
   if(el){ el.classList.remove('hidden'); if(el===menu)renderBoard(); }
 }
 
 document.getElementById('pickHockey').onclick=()=>{ensureAudio();show(hockeySetup);};
 document.getElementById('pickTap').onclick=()=>{ensureAudio();show(tapSetup);};
 document.getElementById('pickQuiz').onclick=()=>{ensureAudio();show(quizSetup);};
+document.getElementById('pickTank').onclick=()=>{ensureAudio();show(tankSetup);};
 document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{running=false;mode=null;show(menu);});
 
 document.querySelectorAll('#scorebtns button').forEach(b=>b.onclick=()=>{target=+b.dataset.t;document.querySelectorAll('#scorebtns button').forEach(x=>x.style.opacity=0.5);b.style.opacity=1;});
@@ -403,6 +568,12 @@ function endTap(){running=false;winSound();const who=tapScore1>tapScore2?'pink':
 document.querySelectorAll('#quizCatBtns button').forEach(b=>b.onclick=()=>{quizCat=b.dataset.cat==='mixed'?'mixed':+b.dataset.cat;document.querySelectorAll('#quizCatBtns button').forEach(x=>x.style.opacity=0.5);b.style.opacity=1;});
 document.querySelectorAll('#quizCountBtns button').forEach(b=>b.onclick=()=>{quizCount=+b.dataset.q;document.querySelectorAll('#quizCountBtns button').forEach(x=>x.style.opacity=0.5);b.style.opacity=1;});
 document.getElementById('quizStart').onclick=()=>startQuiz();
+
+document.querySelectorAll('#tankTargetBtns button').forEach(b=>b.onclick=()=>{tankTarget=+b.dataset.t;document.querySelectorAll('#tankTargetBtns button').forEach(x=>x.style.opacity=0.5);b.style.opacity=1;});
+document.getElementById('tankAngle').oninput=e=>document.getElementById('tankAngleV').textContent=e.target.value+'°';
+document.getElementById('tankPower').oninput=e=>document.getElementById('tankPowerV').textContent=e.target.value;
+document.getElementById('tankFire').onclick=fireTank;
+document.getElementById('tankStart').onclick=()=>startTank();
 
 resize();renderBoard();loop();
 </script>
