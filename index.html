@@ -124,7 +124,6 @@
     <button class="alt" data-cat="17">SCIENCE</button>
     <button class="alt" data-cat="22">GEOGRAPHY</button>
     <button class="alt" data-cat="23">HISTORY</button>
-    <button class="alt" data-cat="20">MYTHOLOGY</button>
     <button class="alt" data-cat="27">ANIMALS</button>
     <button class="alt" data-cat="18">COMPUTERS</button>
     <button class="alt" data-cat="19">MATH</button>
@@ -302,7 +301,7 @@ function normalize(item){
   return {q:decodeHtml(item.question),a:opts,c:opts.indexOf(correct)};
 }
 let quizCat=17; // default Science
-const APPROVED_CATS=[9,17,22,23,20,27,18,19]; // general, science, geo, history, mythology, animals, computers, math
+const APPROVED_CATS=[9,17,22,23,27,18,19]; // general, science, geo, history, animals, computers, math
 async function fetchQuestions(n){
   let cat=quizCat;
   if(cat==='mixed'){ cat=APPROVED_CATS[Math.floor(Math.random()*APPROVED_CATS.length)]; }
