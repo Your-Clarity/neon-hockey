@@ -241,15 +241,16 @@ function drawHockey(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#070912';ctx.fillRec
 function drawPaddle(p,c){drawCircle(p.x,p.y,paddleR,c,c,30);ctx.save();ctx.fillStyle='rgba(255,255,255,0.25)';ctx.beginPath();ctx.arc(p.x,p.y,paddleR*0.55,0,7);ctx.fill();ctx.restore();}
 function drawCircle(x,y,r,fill,glow,blur){ctx.save();ctx.shadowColor=glow;ctx.shadowBlur=blur;ctx.fillStyle=fill;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();ctx.restore();}
 
-let tapTarget=5,tapScore1=0,tapScore2=0,tapState='idle',tapTimer=null,tapColor='#0b1430',tapMsg='';
-function startTapRound(){tapState='waiting';tapColor='#3a0d2e';tapMsg='WAIT...';
+let tapTarget=5,tapScore1=0,tapScore2=0,tapState='idle',tapTimer=null,tapFlash=null,tapColor='#0b1430',tapMsg='';
+function clearTapTimers(){ if(tapTimer)clearTimeout(tapTimer); if(tapFlash)clearTimeout(tapFlash); tapTimer=null; tapFlash=null; }
+function startTapRound(){if(mode!=='tap'||!running)return;tapState='waiting';tapColor='#3a0d2e';tapMsg='WAIT...';
   const delay=1200+Math.random()*2600;if(tapTimer)clearTimeout(tapTimer);
-  tapTimer=setTimeout(()=>{tapState='go';tapColor='#0d3a1a';tapMsg='TAP!';goSound();},delay);}
+  tapTimer=setTimeout(()=>{if(mode!=='tap'||!running)return;tapState='go';tapColor='#0d3a1a';tapMsg='TAP!';goSound();},delay);}
 function tapTouch(e){if(mode!=='tap')return;const t=(e.changedTouches&&e.changedTouches[0])||e;const p=rel(t);const who=p.y<H/2?1:2;
   if(tapState==='waiting'){failSound();if(who===1)tapScore2++;else tapScore1++;flashResult((who===1?'CYAN':'PINK')+' WINS (early tap)');}
   else if(tapState==='go'){winSound();if(who===1)tapScore1++;else tapScore2++;flashResult((who===1?'PINK':'CYAN')+' WINS ROUND');}}
 function flashResult(msg){tapState='result';tapMsg=msg;tapColor='#0b1430';const need=Math.ceil(tapTarget/2);
-  if(tapScore1>=need||tapScore2>=need){setTimeout(endTap,900);return;}setTimeout(startTapRound,1100);}
+  if(tapScore1>=need||tapScore2>=need){tapFlash=setTimeout(endTap,900);return;}tapFlash=setTimeout(startTapRound,1100);}
 function drawTap(){ctx.clearRect(0,0,W,H);ctx.fillStyle=tapColor;ctx.fillRect(0,0,W,H);
   ctx.strokeStyle='rgba(150,170,230,0.4)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
   ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='900 '+Math.min(W,H)*0.09+'px Orbitron';
@@ -376,7 +377,7 @@ function loop(){if(running){if(mode==='hockey'){updateHockey();drawHockey();}els
 function clearCanvas(){ ctx.clearRect(0,0,W,H); ctx.fillStyle='#070912'; ctx.fillRect(0,0,W,H); }
 function show(el){
   // any time we show a menu/setup screen, fully stop gameplay and wipe the field
-  running=false; mode=null; clearCanvas();
+  running=false; mode=null; clearTapTimers(); clearCanvas();
   [menu,hockeySetup,tapSetup,quizSetup].forEach(s=>s.classList.add('hidden'));
   quizUI.classList.remove('on');
   if(el){ el.classList.remove('hidden'); if(el===menu)renderBoard(); }
