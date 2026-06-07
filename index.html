@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>NEON HOCKEY</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%; width: 100%; overflow: hidden;
+    background: #05060f;
+    font-family: 'Orbitron', sans-serif;
+    touch-action: none;
+    overscroll-behavior: none;
+    position: fixed;
+  }
+  #wrap { position: fixed; inset: 0; }
+  canvas { display: block; background: #070912; touch-action: none; position:absolute; inset:0; }
+
+  #overlay {
+    position: fixed; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 26px;
+    background: radial-gradient(circle at 50% 40%, rgba(20,30,60,0.95), rgba(5,6,15,0.98));
+    z-index: 10; text-align: center; padding: 24px;
+  }
+  #overlay.hidden { display: none; }
+  h1 {
+    font-weight: 900; font-size: clamp(34px, 9vw, 76px); letter-spacing: 6px;
+    color: #fff;
+    text-shadow: 0 0 12px #00e5ff, 0 0 28px #00e5ff, 0 0 60px #ff2bd6;
+  }
+  .sub { color: #8aa0c8; font-size: clamp(12px,3.4vw,16px); letter-spacing: 2px; line-height: 1.8; }
+  .row { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+  button {
+    font-family: 'Orbitron', sans-serif; font-weight: 700; letter-spacing: 2px;
+    font-size: clamp(14px,3.6vw,18px); color: #05060f;
+    background: linear-gradient(135deg, #00e5ff, #21ffce);
+    border: none; border-radius: 999px; padding: 16px 34px; cursor: pointer;
+    box-shadow: 0 0 24px rgba(0,229,255,0.6); transition: transform .12s;
+  }
+  button:active { transform: scale(0.95); }
+  button.alt { background: linear-gradient(135deg, #ff2bd6, #ff6ad5); box-shadow: 0 0 24px rgba(255,43,214,0.6); }
+  .scorebtns { display: flex; gap: 10px; }
+  .scorebtns button { padding: 12px 22px; }
+  .winner { color: #21ffce; font-size: clamp(20px,5vw,30px); letter-spacing: 3px; }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="c"></canvas></div>
+
+<div id="overlay">
+  <h1>NEON HOCKEY</h1>
+  <div class="sub">
+    DRAG YOUR PADDLE ON YOUR OWN HALF<br>
+    PINK = TOP&nbsp;&nbsp;•&nbsp;&nbsp;CYAN = BOTTOM<br>
+    FIRST TO <span id="targetLabel">7</span> WINS
+  </div>
+  <div class="sub">PLAY TO:</div>
+  <div class="scorebtns" id="scorebtns">
+    <button class="alt" data-t="5">5</button>
+    <button class="alt" data-t="7">7</button>
+    <button class="alt" data-t="11">11</button>
+  </div>
+  <div class="row"><button id="startBtn">START GAME</button></div>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const overlay = document.getElementById('overlay');
+const subtext = overlay.querySelector('.sub');
+const startBtn = document.getElementById('startBtn');
+
+let W=0,H=0,DPR=1;
+let target=7, running=false;
+let puck,p1,p2,paddleR,puckR;
+let score1=0,score2=0;
+const pointers={};
+
+function resize(){
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  W=window.innerWidth||document.documentElement.clientWidth;
+  H=window.innerHeight||document.documentElement.clientHeight;
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  canvas.width=Math.floor(W*DPR); canvas.height=Math.floor(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  paddleR=Math.max(26,Math.min(W,H)*0.06);
+  puckR=paddleR*0.62;
+  resetPositions(true);
+}
+window.addEventListener('resize',resize);
+
+function resetPositions(full){
+  if(full||!p1) p1={x:W/2,y:H*0.15,px:W/2,py:H*0.15};
+  if(full||!p2) p2={x:W/2,y:H*0.85,px:W/2,py:H*0.85};
+  puck={x:W/2,y:H/2,vx:0,vy:0};
+}
+function serve(dir){
+  puck.x=W/2; puck.y=H/2;
+  const sp=Math.min(W,H)*0.012, ang=Math.random()*0.6-0.3;
+  puck.vx=Math.sin(ang)*sp; puck.vy=dir*sp;
+}
+function clamp(v,a,b){return v<a?a:v>b?b:v;}
+function half(y){return y<H/2?1:2;}
+
+function rel(t){
+  const r=canvas.getBoundingClientRect();
+  return {x:t.clientX-r.left, y:t.clientY-r.top};
+}
+function onDown(e){
+  for(const t of (e.changedTouches||[e])){
+    const id=t.identifier??'m'; const p=rel(t);
+    pointers[id]={x:p.x,y:p.y,which:half(p.y)};
+  } e.preventDefault();
+}
+function onMove(e){
+  for(const t of (e.changedTouches||[e])){
+    const id=t.identifier??'m'; const pt=pointers[id]; if(!pt)continue;
+    const p=rel(t); pt.x=p.x; pt.y=p.y;
+  } e.preventDefault();
+}
+function onUp(e){
+  for(const t of (e.changedTouches||[e])){ delete pointers[t.identifier??'m']; }
+  e.preventDefault();
+}
+canvas.addEventListener('touchstart',onDown,{passive:false});
+canvas.addEventListener('touchmove',onMove,{passive:false});
+canvas.addEventListener('touchend',onUp,{passive:false});
+canvas.addEventListener('touchcancel',onUp,{passive:false});
+canvas.addEventListener('mousedown',onDown);
+canvas.addEventListener('mousemove',onMove);
+window.addEventListener('mouseup',onUp);
+
+function applyPointers(){
+  p1.px=p1.x;p1.py=p1.y;p2.px=p2.x;p2.py=p2.y;
+  for(const id in pointers){
+    const p=pointers[id];
+    if(p.which===1){ p1.x=clamp(p.x,paddleR,W-paddleR); p1.y=clamp(p.y,paddleR,H/2-paddleR); }
+    else { p2.x=clamp(p.x,paddleR,W-paddleR); p2.y=clamp(p.y,H/2+paddleR,H-paddleR); }
+  }
+}
+function collide(pad){
+  const dx=puck.x-pad.x,dy=puck.y-pad.y,dist=Math.hypot(dx,dy),min=puckR+paddleR;
+  if(dist<min&&dist>0){
+    const nx=dx/dist,ny=dy/dist;
+    puck.x=pad.x+nx*min; puck.y=pad.y+ny*min;
+    const pvx=pad.x-pad.px,pvy=pad.y-pad.py;
+    const base=Math.max(Math.hypot(puck.vx,puck.vy),Math.min(W,H)*0.011);
+    puck.vx=nx*base+pvx*0.9; puck.vy=ny*base+pvy*0.9;
+    const cap=Math.min(W,H)*0.045,ns=Math.hypot(puck.vx,puck.vy);
+    if(ns>cap){puck.vx*=cap/ns;puck.vy*=cap/ns;}
+  }
+}
+function update(){
+  applyPointers();
+  puck.x+=puck.vx; puck.y+=puck.vy;
+  if(puck.x<puckR){puck.x=puckR;puck.vx*=-0.98;}
+  if(puck.x>W-puckR){puck.x=W-puckR;puck.vx*=-0.98;}
+  const gw=W*0.42,g0=(W-gw)/2,g1=(W+gw)/2;
+  if(puck.y<puckR){ if(puck.x>g0&&puck.x<g1){score2++;afterGoal(1);return;} puck.y=puckR;puck.vy*=-0.98; }
+  if(puck.y>H-puckR){ if(puck.x>g0&&puck.x<g1){score1++;afterGoal(-1);return;} puck.y=H-puckR;puck.vy*=-0.98; }
+  collide(p1); collide(p2);
+  puck.vx*=0.999; puck.vy*=0.999;
+}
+function afterGoal(dir){
+  if(score1>=target||score2>=target){endGame();return;}
+  resetPositions(false); setTimeout(()=>serve(dir),600);
+}
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#070912'; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(120,150,220,0.35)'; ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
+  ctx.beginPath();ctx.arc(W/2,H/2,Math.min(W,H)*0.12,0,7);ctx.stroke();
+  const gw=W*0.42,g0=(W-gw)/2;
+  ctx.lineWidth=6;
+  ctx.strokeStyle='#ff2bd6';ctx.beginPath();ctx.moveTo(g0,3);ctx.lineTo(g0+gw,3);ctx.stroke();
+  ctx.strokeStyle='#00e5ff';ctx.beginPath();ctx.moveTo(g0,H-3);ctx.lineTo(g0+gw,H-3);ctx.stroke();
+  ctx.font='900 '+Math.min(W,H)*0.16+'px Orbitron';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle='rgba(255,43,214,0.18)';
+  ctx.save();ctx.translate(W/2,H*0.27);ctx.rotate(Math.PI);ctx.fillText(score1,0,0);ctx.restore();
+  ctx.fillStyle='rgba(0,229,255,0.18)';
+  ctx.fillText(score2,W/2,H*0.73);
+  drawPuck(); drawPaddle(p1,'#ff2bd6'); drawPaddle(p2,'#00e5ff');
+}
+function drawPaddle(p,c){
+  ctx.save();ctx.shadowColor=c;ctx.shadowBlur=30;ctx.fillStyle=c;
+  ctx.beginPath();ctx.arc(p.x,p.y,paddleR,0,7);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.25)';
+  ctx.beginPath();ctx.arc(p.x,p.y,paddleR*0.55,0,7);ctx.fill();ctx.restore();
+}
+function drawPuck(){
+  ctx.save();ctx.shadowColor='#fff';ctx.shadowBlur=24;ctx.fillStyle='#f4f8ff';
+  ctx.beginPath();ctx.arc(puck.x,puck.y,puckR,0,7);ctx.fill();ctx.restore();
+}
+function loop(){ if(running)update(); draw(); requestAnimationFrame(loop); }
+
+function startGame(){
+  score1=0;score2=0; resize(); resetPositions(true);
+  overlay.classList.add('hidden'); running=true;
+  serve(Math.random()<0.5?1:-1);
+}
+function endGame(){
+  running=false;
+  const who=score1>=target?'PINK WINS':'CYAN WINS';
+  subtext.innerHTML='<div class="winner">'+who+'</div>'+score1+' &nbsp;—&nbsp; '+score2;
+  startBtn.textContent='PLAY AGAIN';
+  document.getElementById('scorebtns').style.display='none';
+  overlay.classList.remove('hidden');
+}
+document.querySelectorAll('#scorebtns button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    target=+b.dataset.t;
+    const lbl=document.getElementById('targetLabel'); if(lbl)lbl.textContent=target;
+    document.querySelectorAll('#scorebtns button').forEach(x=>x.style.opacity=0.5);
+    b.style.opacity=1;
+  });
+});
+startBtn.addEventListener('click',startGame);
+
+resize();
+loop();
+</script>
+</body>
+</html>
