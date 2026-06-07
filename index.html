@@ -12,204 +12,203 @@
   #wrap { position:fixed; inset:0; }
   canvas { display:block; background:#070912; position:absolute; inset:0; touch-action:none; }
 
-  .screen {
-    position:fixed; inset:0; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; gap:24px; z-index:10;
+  .screen { position:fixed; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:22px; z-index:10;
     background:radial-gradient(circle at 50% 40%, rgba(20,30,60,0.95), rgba(5,6,15,0.98));
-    text-align:center; padding:24px;
-  }
+    text-align:center; padding:24px; overflow-y:auto; }
   .screen.hidden { display:none; }
-  h1 { font-weight:900; font-size:clamp(30px,8.5vw,72px); letter-spacing:5px; color:#fff;
+  h1 { font-weight:900; font-size:clamp(28px,8vw,68px); letter-spacing:5px; color:#fff;
     text-shadow:0 0 12px #00e5ff,0 0 28px #00e5ff,0 0 60px #ff2bd6; }
   .sub { color:#8aa0c8; font-size:clamp(12px,3.4vw,16px); letter-spacing:2px; line-height:1.8; }
   .row { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
   button { font-family:'Orbitron',sans-serif; font-weight:700; letter-spacing:2px;
     font-size:clamp(14px,3.6vw,18px); color:#05060f;
     background:linear-gradient(135deg,#00e5ff,#21ffce); border:none; border-radius:999px;
-    padding:16px 32px; cursor:pointer; box-shadow:0 0 24px rgba(0,229,255,0.6); transition:transform .12s; }
+    padding:15px 30px; cursor:pointer; box-shadow:0 0 24px rgba(0,229,255,0.6); transition:transform .12s; }
   button:active { transform:scale(0.95); }
   button.alt { background:linear-gradient(135deg,#ff2bd6,#ff6ad5); box-shadow:0 0 24px rgba(255,43,214,0.6); }
   button.ghost { background:transparent; color:#8aa0c8; box-shadow:none; border:2px solid #2a3a5c; }
   .scorebtns { display:flex; gap:10px; }
-  .scorebtns button { padding:12px 22px; }
+  .scorebtns button { padding:11px 20px; }
   .winner { color:#21ffce; font-size:clamp(20px,5vw,30px); letter-spacing:3px; }
-  .modecard { display:flex; flex-direction:column; gap:6px; padding:22px 26px; border-radius:20px;
-    border:2px solid #2a3a5c; background:rgba(15,22,44,0.6); cursor:pointer; min-width:240px; transition:transform .12s,border-color .12s; }
+  .modecard { display:flex; flex-direction:column; gap:6px; padding:18px 24px; border-radius:18px;
+    border:2px solid #2a3a5c; background:rgba(15,22,44,0.6); cursor:pointer; min-width:240px; transition:transform .12s; }
   .modecard:active { transform:scale(0.97); }
-  .modecard .t { font-size:clamp(18px,4.5vw,24px); font-weight:900; color:#fff; letter-spacing:2px; }
+  .modecard .t { font-size:clamp(17px,4.2vw,22px); font-weight:900; color:#fff; letter-spacing:2px; }
   .modecard .d { font-size:clamp(11px,2.8vw,13px); color:#8aa0c8; letter-spacing:1px; }
   .c-cyan { color:#21ffce; } .c-pink { color:#ff6ad5; }
+
+  .board { width:min(540px,92vw); border:2px solid #2a3a5c; border-radius:16px;
+    background:rgba(15,22,44,0.55); padding:14px 16px; }
+  .board .bt { font-size:clamp(12px,3vw,14px); color:#cdd8f0; letter-spacing:2px; margin-bottom:10px; }
+  .board table { width:100%; border-collapse:collapse; }
+  .board td,.board th { padding:6px 4px; font-size:clamp(11px,2.9vw,14px); letter-spacing:1px; }
+  .board th { color:#8aa0c8; font-weight:700; }
+  .board td.l { text-align:left; color:#cdd8f0; }
+  .board .pk { color:#ff6ad5; font-weight:900; } .board .cy { color:#21ffce; font-weight:900; }
+  .board .lead { text-shadow:0 0 10px currentColor; }
+  .clr { color:#6f7fa3; font-size:11px; letter-spacing:1px; margin-top:8px; cursor:pointer; text-decoration:underline; }
+
+  #quizUI { position:fixed; inset:0; z-index:9; display:none; }
+  #quizUI.on { display:block; }
+  .qhalf { position:absolute; left:0; width:100%; height:50%; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:10px; padding:14px; }
+  #qTop { top:0; transform:rotate(180deg); }
+  #qBot { bottom:0; }
+  .qhalf .qq { font-size:clamp(15px,3.6vw,22px); font-weight:700; color:#fff; max-width:92%; line-height:1.3; }
+  .qopts { display:grid; grid-template-columns:1fr 1fr; gap:8px; width:min(420px,92%); }
+  .qopt { padding:12px 8px; border-radius:12px; border:2px solid #2a3a5c; background:rgba(20,28,52,0.85);
+    color:#dfe7f7; font-family:'Orbitron',sans-serif; font-weight:700; font-size:clamp(12px,3vw,16px);
+    letter-spacing:1px; cursor:pointer; min-height:48px; }
+  .qopt.correct { background:linear-gradient(135deg,#0d8a3a,#21ffce); color:#05060f; border-color:#21ffce; }
+  .qopt.wrong { background:linear-gradient(135deg,#7a0d2a,#ff2bd6); color:#fff; border-color:#ff2bd6; }
+  .qopt.dim { opacity:0.4; }
+  .qscore { font-size:clamp(13px,3.4vw,18px); font-weight:900; letter-spacing:2px; }
 </style>
 </head>
 <body>
 <div id="wrap"><canvas id="c"></canvas></div>
 
-<!-- MENU -->
+<div id="quizUI">
+  <div class="qhalf" id="qTop">
+    <div class="qscore c-pink" id="qsTop">PINK 0</div>
+    <div class="qq" id="qqTop">?</div>
+    <div class="qopts" id="qoTop"></div>
+  </div>
+  <div class="qhalf" id="qBot">
+    <div class="qscore c-cyan" id="qsBot">CYAN 0</div>
+    <div class="qq" id="qqBot">?</div>
+    <div class="qopts" id="qoBot"></div>
+  </div>
+</div>
+
 <div class="screen" id="menu">
   <h1>NEON ARCADE</h1>
   <div class="sub">TWO PLAYERS · ONE IPAD</div>
   <div class="row">
-    <div class="modecard" id="pickHockey">
-      <div class="t c-cyan">AIR HOCKEY</div>
-      <div class="d">Drag your paddle · score in their goal</div>
-    </div>
-    <div class="modecard" id="pickTap">
-      <div class="t c-pink">TAP DUEL</div>
-      <div class="d">Wait for GREEN · fastest tap wins</div>
-    </div>
+    <div class="modecard" id="pickHockey"><div class="t c-cyan">AIR HOCKEY</div><div class="d">Drag your paddle · score in their goal</div></div>
+    <div class="modecard" id="pickTap"><div class="t c-pink">TAP DUEL</div><div class="d">Wait for GREEN · fastest tap wins</div></div>
+    <div class="modecard" id="pickQuiz"><div class="t c-cyan">SCIENCE QUIZ</div><div class="d">Both answer · point for each correct</div></div>
   </div>
+  <div class="board" id="board"></div>
 </div>
 
-<!-- HOCKEY SETUP -->
 <div class="screen hidden" id="hockeySetup">
   <h1>AIR HOCKEY</h1>
   <div class="sub" id="hockeyInfo">PINK = TOP · CYAN = BOTTOM<br>DRAG ON YOUR OWN HALF</div>
   <div class="sub">PLAY TO:</div>
-  <div class="scorebtns" id="scorebtns">
-    <button class="alt" data-t="5">5</button>
-    <button class="alt" data-t="7">7</button>
-    <button class="alt" data-t="11">11</button>
-  </div>
-  <div class="row">
-    <button id="hockeyStart">START</button>
-    <button class="ghost" data-back>MENU</button>
-  </div>
+  <div class="scorebtns" id="scorebtns"><button class="alt" data-t="5">5</button><button class="alt" data-t="7">7</button><button class="alt" data-t="11">11</button></div>
+  <div class="row"><button id="hockeyStart">START</button><button class="ghost" data-back>MENU</button></div>
 </div>
 
-<!-- TAP SETUP -->
 <div class="screen hidden" id="tapSetup">
   <h1>TAP DUEL</h1>
-  <div class="sub" id="tapInfo">
-    WAIT FOR THE SCREEN TO TURN GREEN<br>
-    THEN TAP YOUR HALF FIRST TO WIN THE ROUND<br>
-    TAP TOO EARLY = YOU LOSE THE ROUND<br>
-    BEST OF <span id="tapTargetLabel">5</span>
-  </div>
+  <div class="sub" id="tapInfo">WAIT FOR GREEN · TAP YOUR HALF FIRST TO WIN<br>TAP EARLY = LOSE THE ROUND<br>BEST OF <span id="tapTargetLabel">5</span></div>
   <div class="sub">BEST OF:</div>
-  <div class="scorebtns" id="tapScoreBtns">
-    <button class="alt" data-t="3">3</button>
-    <button class="alt" data-t="5">5</button>
-    <button class="alt" data-t="7">7</button>
-  </div>
-  <div class="row">
-    <button id="tapStart">START</button>
-    <button class="ghost" data-back>MENU</button>
-  </div>
+  <div class="scorebtns" id="tapScoreBtns"><button class="alt" data-t="3">3</button><button class="alt" data-t="5">5</button><button class="alt" data-t="7">7</button></div>
+  <div class="row"><button id="tapStart">START</button><button class="ghost" data-back>MENU</button></div>
+</div>
+
+<div class="screen hidden" id="quizSetup">
+  <h1>SCIENCE QUIZ</h1>
+  <div class="sub" id="quizInfo">BOTH PLAYERS ANSWER EACH QUESTION<br>1 POINT FOR EACH CORRECT · MOST POINTS WINS</div>
+  <div class="sub">QUESTIONS:</div>
+  <div class="scorebtns" id="quizCountBtns"><button class="alt" data-q="5">5</button><button class="alt" data-q="10">10</button><button class="alt" data-q="15">15</button></div>
+  <div class="row"><button id="quizStart">START</button><button class="ghost" data-back>MENU</button></div>
 </div>
 
 <script>
 const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
-const menu=document.getElementById('menu');
-const hockeySetup=document.getElementById('hockeySetup');
-const tapSetup=document.getElementById('tapSetup');
-
+const menu=document.getElementById('menu'), hockeySetup=document.getElementById('hockeySetup'),
+      tapSetup=document.getElementById('tapSetup'), quizSetup=document.getElementById('quizSetup'),
+      quizUI=document.getElementById('quizUI');
 let W=0,H=0,DPR=1, mode=null, running=false;
+
+const stats={ hockey:{pink:0,cyan:0}, tap:{pink:0,cyan:0}, quiz:{pink:0,cyan:0} };
+function recordWin(game,winner){ if(winner==='tie')return; stats[game][winner]++; }
+function renderBoard(){
+  const labels={hockey:'AIR HOCKEY',tap:'TAP DUEL',quiz:'SCIENCE QUIZ'};
+  let tp=0,tc=0,rows='';
+  for(const k of ['hockey','tap','quiz']){const s=stats[k];tp+=s.pink;tc+=s.cyan;
+    const pl=s.pink>s.cyan?'lead':'',cl=s.cyan>s.pink?'lead':'';
+    rows+='<tr><td class="l">'+labels[k]+'</td><td class="pk '+pl+'">'+s.pink+'</td><td class="cy '+cl+'">'+s.cyan+'</td></tr>';}
+  const tpl=tp>tc?'lead':'',tcl=tc>tp?'lead':'';
+  document.getElementById('board').innerHTML=
+    '<div class="bt">SESSION SCOREBOARD</div>'+
+    '<table><tr><th class="l"></th><th class="pk">PINK</th><th class="cy">CYAN</th></tr>'+rows+
+    '<tr><td class="l">TOTAL</td><td class="pk '+tpl+'">'+tp+'</td><td class="cy '+tcl+'">'+tc+'</td></tr></table>'+
+    '<div class="clr" id="clrBtn">reset scoreboard</div>';
+  document.getElementById('clrBtn').onclick=()=>{for(const k in stats){stats[k].pink=0;stats[k].cyan=0;}renderBoard();};
+}
 
 function resize(){
   DPR=Math.min(window.devicePixelRatio||1,2);
   W=window.innerWidth||document.documentElement.clientWidth;
   H=window.innerHeight||document.documentElement.clientHeight;
-  canvas.style.width=W+'px'; canvas.style.height=H+'px';
-  canvas.width=Math.floor(W*DPR); canvas.height=Math.floor(H*DPR);
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  canvas.width=Math.floor(W*DPR);canvas.height=Math.floor(H*DPR);
   ctx.setTransform(DPR,0,0,DPR,0,0);
-  paddleR=Math.max(26,Math.min(W,H)*0.06); puckR=paddleR*0.62;
-  if(mode==='hockey') resetPositions(true);
+  paddleR=Math.max(26,Math.min(W,H)*0.06);puckR=paddleR*0.62;
+  if(mode==='hockey')resetPositions(true);
 }
 window.addEventListener('resize',resize);
 
-/* ---------- audio ---------- */
 let actx=null;
-function beep(freq,dur,type,vol){
-  try{
-    if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
-    const o=actx.createOscillator(), g=actx.createGain();
-    o.type=type||'sine'; o.frequency.value=freq;
-    g.gain.value=vol||0.2;
-    o.connect(g); g.connect(actx.destination);
-    o.start();
-    g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime+dur);
-    o.stop(actx.currentTime+dur);
-  }catch(e){}
-}
-function goalSound(){ beep(180,0.18,'sawtooth',0.25); setTimeout(()=>beep(120,0.22,'sawtooth',0.22),60); }
-function hitSound(){ beep(420,0.05,'square',0.12); }
-function winSound(){ beep(523,0.12,'triangle',0.25); setTimeout(()=>beep(784,0.18,'triangle',0.25),120); }
-function goSound(){ beep(880,0.12,'square',0.3); }
-function tickSound(){ beep(300,0.04,'sine',0.1); }
-function failSound(){ beep(160,0.3,'sawtooth',0.25); }
+function ensureAudio(){try{if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}
+function beep(freq,dur,type,vol){try{ensureAudio();const o=actx.createOscillator(),g=actx.createGain();
+  o.type=type||'sine';o.frequency.value=freq;g.gain.value=vol||0.2;o.connect(g);g.connect(actx.destination);
+  o.start();g.gain.exponentialRampToValueAtTime(0.0001,actx.currentTime+dur);o.stop(actx.currentTime+dur);}catch(e){}}
+function goalSound(){beep(180,0.18,'sawtooth',0.25);setTimeout(()=>beep(120,0.22,'sawtooth',0.22),60);}
+function hitSound(){beep(420,0.05,'square',0.12);}
+function winSound(){beep(523,0.12,'triangle',0.25);setTimeout(()=>beep(784,0.18,'triangle',0.25),120);}
+function goSound(){beep(880,0.12,'square',0.3);}
+function failSound(){beep(160,0.3,'sawtooth',0.25);}
+function rightSound(){beep(660,0.1,'triangle',0.22);}
+function wrongSound(){beep(200,0.2,'sawtooth',0.2);}
 
-/* ===================== AIR HOCKEY ===================== */
-let puck,p1,p2,paddleR,puckR,score1=0,score2=0,target=7;
-let trail=[];
+let puck,p1,p2,paddleR,puckR,score1=0,score2=0,target=7,trail=[];
 const pointers={};
 function resetPositions(full){
-  if(full||!p1) p1={x:W/2,y:H*0.15,px:W/2,py:H*0.15};
-  if(full||!p2) p2={x:W/2,y:H*0.85,px:W/2,py:H*0.85};
-  puck={x:W/2,y:H/2,vx:0,vy:0}; trail=[];
+  if(full||!p1)p1={x:W/2,y:H*0.15,px:W/2,py:H*0.15};
+  if(full||!p2)p2={x:W/2,y:H*0.85,px:W/2,py:H*0.85};
+  puck={x:W/2,y:H/2,vx:0,vy:0};trail=[];
 }
-function serve(dir){ puck.x=W/2;puck.y=H/2;
-  const sp=Math.min(W,H)*0.012,a=Math.random()*0.6-0.3;
-  puck.vx=Math.sin(a)*sp; puck.vy=dir*sp; }
+function serve(dir){puck.x=W/2;puck.y=H/2;const sp=Math.min(W,H)*0.012,a=Math.random()*0.6-0.3;puck.vx=Math.sin(a)*sp;puck.vy=dir*sp;}
 function clamp(v,a,b){return v<a?a:v>b?b:v;}
 function half(y){return y<H/2?1:2;}
 function rel(t){const r=canvas.getBoundingClientRect();return{x:t.clientX-r.left,y:t.clientY-r.top};}
 
 function onDown(e){
-  if(mode==='tap'){ tapTouch(e); }
-  if(mode==='hockey'){
-    for(const t of (e.changedTouches||[e])){const id=t.identifier??'m';const p=rel(t);pointers[id]={x:p.x,y:p.y,which:half(p.y)};}
-  }
+  if(mode==='tap'){tapTouch(e);}
+  if(mode==='hockey'){for(const t of (e.changedTouches||[e])){const id=t.identifier??'m';const p=rel(t);pointers[id]={x:p.x,y:p.y,which:half(p.y)};}}
   e.preventDefault();
 }
-function onMove(e){
-  if(mode!=='hockey')return;
-  for(const t of (e.changedTouches||[e])){const id=t.identifier??'m';const pt=pointers[id];if(!pt)continue;const p=rel(t);pt.x=p.x;pt.y=p.y;}
-  e.preventDefault();
-}
-function onUp(e){ for(const t of (e.changedTouches||[e])) delete pointers[t.identifier??'m']; e.preventDefault(); }
+function onMove(e){if(mode!=='hockey')return;for(const t of (e.changedTouches||[e])){const id=t.identifier??'m';const pt=pointers[id];if(!pt)continue;const p=rel(t);pt.x=p.x;pt.y=p.y;}e.preventDefault();}
+function onUp(e){for(const t of (e.changedTouches||[e]))delete pointers[t.identifier??'m'];e.preventDefault();}
 canvas.addEventListener('touchstart',onDown,{passive:false});
 canvas.addEventListener('touchmove',onMove,{passive:false});
 canvas.addEventListener('touchend',onUp,{passive:false});
 canvas.addEventListener('touchcancel',onUp,{passive:false});
-canvas.addEventListener('mousedown',onDown);
-canvas.addEventListener('mousemove',onMove);
-window.addEventListener('mouseup',onUp);
+canvas.addEventListener('mousedown',onDown);canvas.addEventListener('mousemove',onMove);window.addEventListener('mouseup',onUp);
 
-function applyPointers(){
-  p1.px=p1.x;p1.py=p1.y;p2.px=p2.x;p2.py=p2.y;
+function applyPointers(){p1.px=p1.x;p1.py=p1.y;p2.px=p2.x;p2.py=p2.y;
   for(const id in pointers){const p=pointers[id];
     if(p.which===1){p1.x=clamp(p.x,paddleR,W-paddleR);p1.y=clamp(p.y,paddleR,H/2-paddleR);}
-    else{p2.x=clamp(p.x,paddleR,W-paddleR);p2.y=clamp(p.y,H/2+paddleR,H-paddleR);}}
-}
-function collide(pad){
-  const dx=puck.x-pad.x,dy=puck.y-pad.y,dist=Math.hypot(dx,dy),min=puckR+paddleR;
-  if(dist<min&&dist>0){const nx=dx/dist,ny=dy/dist;
-    puck.x=pad.x+nx*min;puck.y=pad.y+ny*min;
-    const pvx=pad.x-pad.px,pvy=pad.y-pad.py;
-    const base=Math.max(Math.hypot(puck.vx,puck.vy),Math.min(W,H)*0.011);
+    else{p2.x=clamp(p.x,paddleR,W-paddleR);p2.y=clamp(p.y,H/2+paddleR,H-paddleR);}}}
+function collide(pad){const dx=puck.x-pad.x,dy=puck.y-pad.y,dist=Math.hypot(dx,dy),min=puckR+paddleR;
+  if(dist<min&&dist>0){const nx=dx/dist,ny=dy/dist;puck.x=pad.x+nx*min;puck.y=pad.y+ny*min;
+    const pvx=pad.x-pad.px,pvy=pad.y-pad.py,base=Math.max(Math.hypot(puck.vx,puck.vy),Math.min(W,H)*0.011);
     puck.vx=nx*base+pvx*0.9;puck.vy=ny*base+pvy*0.9;
-    const cap=Math.min(W,H)*0.045,ns=Math.hypot(puck.vx,puck.vy);
-    if(ns>cap){puck.vx*=cap/ns;puck.vy*=cap/ns;}
-    hitSound();}
-}
-function updateHockey(){
-  applyPointers();
-  puck.x+=puck.vx;puck.y+=puck.vy;
-  trail.push({x:puck.x,y:puck.y}); if(trail.length>12)trail.shift();
-  if(puck.x<puckR){puck.x=puckR;puck.vx*=-0.98;}
-  if(puck.x>W-puckR){puck.x=W-puckR;puck.vx*=-0.98;}
+    const cap=Math.min(W,H)*0.045,ns=Math.hypot(puck.vx,puck.vy);if(ns>cap){puck.vx*=cap/ns;puck.vy*=cap/ns;}hitSound();}}
+function updateHockey(){applyPointers();puck.x+=puck.vx;puck.y+=puck.vy;
+  trail.push({x:puck.x,y:puck.y});if(trail.length>12)trail.shift();
+  if(puck.x<puckR){puck.x=puckR;puck.vx*=-0.98;}if(puck.x>W-puckR){puck.x=W-puckR;puck.vx*=-0.98;}
   const gw=W*0.42,g0=(W-gw)/2,g1=(W+gw)/2;
   if(puck.y<puckR){if(puck.x>g0&&puck.x<g1){score2++;goalSound();afterGoal(1);return;}puck.y=puckR;puck.vy*=-0.98;}
   if(puck.y>H-puckR){if(puck.x>g0&&puck.x<g1){score1++;goalSound();afterGoal(-1);return;}puck.y=H-puckR;puck.vy*=-0.98;}
-  collide(p1);collide(p2);
-  puck.vx*=0.999;puck.vy*=0.999;
-}
-function afterGoal(dir){
-  if(score1>=target||score2>=target){endHockey();return;}
-  resetPositions(false);setTimeout(()=>serve(dir),600);
-}
-function drawHockey(){
-  ctx.clearRect(0,0,W,H); ctx.fillStyle='#070912'; ctx.fillRect(0,0,W,H);
+  collide(p1);collide(p2);puck.vx*=0.999;puck.vy*=0.999;}
+function afterGoal(dir){if(score1>=target||score2>=target){endHockey();return;}resetPositions(false);setTimeout(()=>serve(dir),600);}
+function drawHockey(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#070912';ctx.fillRect(0,0,W,H);
   ctx.strokeStyle='rgba(120,150,220,0.35)';ctx.lineWidth=2;
   ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
   ctx.beginPath();ctx.arc(W/2,H/2,Math.min(W,H)*0.12,0,7);ctx.stroke();
@@ -217,114 +216,155 @@ function drawHockey(){
   ctx.strokeStyle='#ff2bd6';ctx.beginPath();ctx.moveTo(g0,3);ctx.lineTo(g0+gw,3);ctx.stroke();
   ctx.strokeStyle='#00e5ff';ctx.beginPath();ctx.moveTo(g0,H-3);ctx.lineTo(g0+gw,H-3);ctx.stroke();
   ctx.font='900 '+Math.min(W,H)*0.16+'px Orbitron';ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillStyle='rgba(255,43,214,0.18)';
-  ctx.save();ctx.translate(W/2,H*0.27);ctx.rotate(Math.PI);ctx.fillText(score1,0,0);ctx.restore();
+  ctx.fillStyle='rgba(255,43,214,0.18)';ctx.save();ctx.translate(W/2,H*0.27);ctx.rotate(Math.PI);ctx.fillText(score1,0,0);ctx.restore();
   ctx.fillStyle='rgba(0,229,255,0.18)';ctx.fillText(score2,W/2,H*0.73);
-  // trail
-  for(let i=0;i<trail.length;i++){const t=trail[i],a=i/trail.length;
-    ctx.fillStyle='rgba(244,248,255,'+(a*0.4)+')';
-    ctx.beginPath();ctx.arc(t.x,t.y,puckR*a,0,7);ctx.fill();}
-  drawCircle(puck.x,puck.y,puckR,'#f4f8ff','#fff',24);
-  drawPaddle(p1,'#ff2bd6');drawPaddle(p2,'#00e5ff');
-}
-function drawPaddle(p,c){drawCircle(p.x,p.y,paddleR,c,c,30);
-  ctx.save();ctx.fillStyle='rgba(255,255,255,0.25)';ctx.beginPath();ctx.arc(p.x,p.y,paddleR*0.55,0,7);ctx.fill();ctx.restore();}
+  for(let i=0;i<trail.length;i++){const t=trail[i],a=i/trail.length;ctx.fillStyle='rgba(244,248,255,'+(a*0.4)+')';ctx.beginPath();ctx.arc(t.x,t.y,puckR*a,0,7);ctx.fill();}
+  drawCircle(puck.x,puck.y,puckR,'#f4f8ff','#fff',24);drawPaddle(p1,'#ff2bd6');drawPaddle(p2,'#00e5ff');}
+function drawPaddle(p,c){drawCircle(p.x,p.y,paddleR,c,c,30);ctx.save();ctx.fillStyle='rgba(255,255,255,0.25)';ctx.beginPath();ctx.arc(p.x,p.y,paddleR*0.55,0,7);ctx.fill();ctx.restore();}
 function drawCircle(x,y,r,fill,glow,blur){ctx.save();ctx.shadowColor=glow;ctx.shadowBlur=blur;ctx.fillStyle=fill;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();ctx.restore();}
 
-/* ===================== TAP DUEL ===================== */
-let tapTarget=5, tapScore1=0, tapScore2=0, tapState='idle', tapTimer=null, tapColor='#0b1430', tapMsg='';
-function startTapRound(){
-  tapState='waiting'; tapColor='#3a0d2e'; tapMsg='WAIT...';
-  const delay=1200+Math.random()*2600;
-  if(tapTimer)clearTimeout(tapTimer);
-  tapTimer=setTimeout(()=>{ tapState='go'; tapColor='#0d3a1a'; tapMsg='TAP!'; goSound(); },delay);
-}
-function tapTouch(e){
-  if(mode!=='tap')return;
-  const t=(e.changedTouches&&e.changedTouches[0])||e; const p=rel(t);
-  const who=p.y<H/2?1:2;
-  if(tapState==='waiting'){ // too early -> other player wins round
-    failSound();
-    if(who===1)tapScore2++; else tapScore1++;
-    flashResult((who===1?'CYAN':'PINK')+' WINS (early tap)');
-  } else if(tapState==='go'){
-    winSound();
-    if(who===1)tapScore1++; else tapScore2++;
-    flashResult((who===1?'PINK':'CYAN')+' WINS ROUND');
-  }
-}
-function flashResult(msg){
-  tapState='result'; tapMsg=msg; tapColor='#0b1430';
-  const need=Math.ceil(tapTarget/2);
-  if(tapScore1>=need||tapScore2>=need){ setTimeout(endTap,900); return; }
-  setTimeout(startTapRound,1100);
-}
-function drawTap(){
-  ctx.clearRect(0,0,W,H);
-  // split halves with state color
-  ctx.fillStyle=tapColor; ctx.fillRect(0,0,W,H/2);
-  ctx.fillStyle=tapColor; ctx.fillRect(0,H/2,W,H/2);
-  ctx.strokeStyle='rgba(150,170,230,0.4)';ctx.lineWidth=2;
-  ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
-  // labels (top rotated)
-  ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.font='900 '+Math.min(W,H)*0.09+'px Orbitron';
+let tapTarget=5,tapScore1=0,tapScore2=0,tapState='idle',tapTimer=null,tapColor='#0b1430',tapMsg='';
+function startTapRound(){tapState='waiting';tapColor='#3a0d2e';tapMsg='WAIT...';
+  const delay=1200+Math.random()*2600;if(tapTimer)clearTimeout(tapTimer);
+  tapTimer=setTimeout(()=>{tapState='go';tapColor='#0d3a1a';tapMsg='TAP!';goSound();},delay);}
+function tapTouch(e){if(mode!=='tap')return;const t=(e.changedTouches&&e.changedTouches[0])||e;const p=rel(t);const who=p.y<H/2?1:2;
+  if(tapState==='waiting'){failSound();if(who===1)tapScore2++;else tapScore1++;flashResult((who===1?'CYAN':'PINK')+' WINS (early tap)');}
+  else if(tapState==='go'){winSound();if(who===1)tapScore1++;else tapScore2++;flashResult((who===1?'PINK':'CYAN')+' WINS ROUND');}}
+function flashResult(msg){tapState='result';tapMsg=msg;tapColor='#0b1430';const need=Math.ceil(tapTarget/2);
+  if(tapScore1>=need||tapScore2>=need){setTimeout(endTap,900);return;}setTimeout(startTapRound,1100);}
+function drawTap(){ctx.clearRect(0,0,W,H);ctx.fillStyle=tapColor;ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(150,170,230,0.4)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='900 '+Math.min(W,H)*0.09+'px Orbitron';
   ctx.fillStyle='#ff6ad5';ctx.save();ctx.translate(W/2,H*0.25);ctx.rotate(Math.PI);ctx.fillText('PINK '+tapScore1,0,0);ctx.restore();
   ctx.fillStyle='#21ffce';ctx.fillText('CYAN '+tapScore2,W/2,H*0.75);
-  // center message
-  ctx.font='900 '+Math.min(W,H)*0.07+'px Orbitron';
-  ctx.fillStyle=tapState==='go'?'#7CFFB0':'#cdd8f0';
-  ctx.save();ctx.shadowColor=tapState==='go'?'#21ffce':'#000';ctx.shadowBlur=tapState==='go'?40:0;
-  ctx.fillText(tapMsg,W/2,H/2);ctx.restore();
-}
+  ctx.font='900 '+Math.min(W,H)*0.07+'px Orbitron';ctx.fillStyle=tapState==='go'?'#7CFFB0':'#cdd8f0';
+  ctx.save();ctx.shadowColor=tapState==='go'?'#21ffce':'#000';ctx.shadowBlur=tapState==='go'?40:0;ctx.fillText(tapMsg,W/2,H/2);ctx.restore();}
 
-/* ===================== LOOP & FLOW ===================== */
-function loop(){
-  if(running){
-    if(mode==='hockey'){updateHockey();drawHockey();}
-    else if(mode==='tap'){drawTap();}
-  }
-  requestAnimationFrame(loop);
+const QUESTIONS=[
+  {q:"What gas do plants mainly absorb from the air?",a:["Carbon dioxide","Oxygen","Nitrogen","Hydrogen"],c:0},
+  {q:"What is the chemical symbol for gold?",a:["Gd","Au","Ag","Go"],c:1},
+  {q:"How many bones are in the adult human body?",a:["186","226","206","256"],c:2},
+  {q:"What planet is known as the Red Planet?",a:["Venus","Jupiter","Mercury","Mars"],c:3},
+  {q:"What force keeps us on the ground?",a:["Gravity","Magnetism","Friction","Tension"],c:0},
+  {q:"Water is made of hydrogen and which other element?",a:["Carbon","Oxygen","Helium","Nitrogen"],c:1},
+  {q:"What part of the cell contains DNA?",a:["Ribosome","Membrane","Nucleus","Cytoplasm"],c:2},
+  {q:"Which is the largest planet in our solar system?",a:["Saturn","Neptune","Earth","Jupiter"],c:3},
+  {q:"The speed of light is approximately?",a:["300,000 km/s","3,000 km/s","30,000 km/s","3 million km/s"],c:0},
+  {q:"What do we call animals that eat only plants?",a:["Carnivores","Herbivores","Omnivores","Insectivores"],c:1},
+  {q:"What is H2O commonly known as?",a:["Salt","Acid","Water","Sugar"],c:2},
+  {q:"Which blood cells fight infection?",a:["Red cells","Platelets","Plasma","White cells"],c:3},
+  {q:"What is the powerhouse of the cell?",a:["Mitochondria","Nucleus","Ribosome","Vacuole"],c:0},
+  {q:"How many planets are in our solar system?",a:["7","8","9","10"],c:1},
+  {q:"What metal is liquid at room temperature?",a:["Iron","Lead","Mercury","Tin"],c:2},
+  {q:"What gas do humans need to breathe to live?",a:["Carbon dioxide","Helium","Nitrogen","Oxygen"],c:3},
+  {q:"What is the hardest natural substance?",a:["Diamond","Quartz","Steel","Granite"],c:0},
+  {q:"The Earth orbits around what?",a:["The Moon","The Sun","Mars","Jupiter"],c:1},
+  {q:"What organ pumps blood through the body?",a:["Lungs","Liver","Heart","Kidney"],c:2},
+  {q:"What is frozen water called?",a:["Steam","Vapor","Mist","Ice"],c:3},
+  {q:"Who proposed the theory of relativity?",a:["Einstein","Newton","Darwin","Tesla"],c:0},
+  {q:"Most abundant gas in Earth's atmosphere?",a:["Oxygen","Nitrogen","Argon","CO2"],c:1},
+  {q:"How many legs does an insect have?",a:["4","8","6","10"],c:2},
+  {q:"What do bees collect from flowers to make honey?",a:["Water","Pollen only","Leaves","Nectar"],c:3},
+  {q:"What is the center of an atom called?",a:["Nucleus","Electron","Proton shell","Orbit"],c:0},
+  {q:"Sound travels fastest through which medium?",a:["Vacuum","Steel","Air","Foam"],c:1},
+  {q:"What vitamin does sunlight help your body make?",a:["Vitamin A","Vitamin C","Vitamin D","Vitamin K"],c:2},
+  {q:"What is the closest star to Earth?",a:["Sirius","Polaris","Alpha Centauri","The Sun"],c:3},
+  {q:"Which part of a plant makes its food?",a:["Leaf","Root","Stem","Flower"],c:0},
+  {q:"What process turns liquid water into gas?",a:["Freezing","Evaporation","Condensation","Melting"],c:1},
+];
+let quizCount=10,qIdx=0,qScore1=0,qScore2=0,qAns1=null,qAns2=null,qLocked=false;
+let quizBank=[]; // active set of {q,a,c} for this game
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function decodeHtml(s){const t=document.createElement('textarea');t.innerHTML=s;return t.value;}
+function normalize(item){
+  const correct=decodeHtml(item.correct_answer);
+  const opts=item.incorrect_answers.map(decodeHtml).concat([correct]);
+  shuffle(opts);
+  return {q:decodeHtml(item.question),a:opts,c:opts.indexOf(correct)};
 }
-function show(el){[menu,hockeySetup,tapSetup].forEach(s=>s.classList.add('hidden')); if(el)el.classList.remove('hidden');}
+async function fetchQuestions(n){
+  const url='https://opentdb.com/api.php?amount='+n+'&category=17&type=multiple';
+  const res=await fetch(url);
+  const data=await res.json();
+  if(data.response_code!==0||!data.results||!data.results.length) throw new Error('no questions');
+  return data.results.map(normalize);
+}
+function fallbackBank(n){
+  const order=shuffle([...Array(QUESTIONS.length).keys()]).slice(0,n);
+  return order.map(i=>QUESTIONS[i]);
+}
+async function startQuiz(){
+  mode='quiz';qScore1=0;qScore2=0;qIdx=0;
+  show(null);quizUI.classList.add('on');
+  document.getElementById('qqTop').textContent='LOADING QUESTIONS...';
+  document.getElementById('qqBot').textContent='LOADING QUESTIONS...';
+  document.getElementById('qoTop').innerHTML='';document.getElementById('qoBot').innerHTML='';
+  try{ quizBank=await fetchQuestions(quizCount); }
+  catch(e){ quizBank=fallbackBank(quizCount); }
+  running=true;loadQuestion();
+}
+function loadQuestion(){qAns1=null;qAns2=null;qLocked=false;
+  const item=quizBank[qIdx];
+  document.getElementById('qsTop').textContent='PINK '+qScore1;
+  document.getElementById('qsBot').textContent='CYAN '+qScore2;
+  document.getElementById('qqTop').textContent=(qIdx+1)+'/'+quizCount+'  '+item.q;
+  document.getElementById('qqBot').textContent=(qIdx+1)+'/'+quizCount+'  '+item.q;
+  buildOpts('qoTop',item,1);buildOpts('qoBot',item,2);}
+function buildOpts(containerId,item,player){const box=document.getElementById(containerId);box.innerHTML='';
+  item.a.forEach((txt,i)=>{const b=document.createElement('div');b.className='qopt';b.textContent=txt;
+    b.onclick=()=>chooseAnswer(player,i,b);box.appendChild(b);});}
+function chooseAnswer(player,idx,el){
+  if(qLocked)return;
+  if(player===1&&qAns1!==null)return;
+  if(player===2&&qAns2!==null)return;
+  if(player===1)qAns1=idx;else qAns2=idx;
+  el.parentElement.querySelectorAll('.qopt').forEach(o=>{if(o!==el)o.classList.add('dim');});
+  el.classList.remove('dim');el.style.borderColor=player===1?'#ff6ad5':'#21ffce';
+  beep(player===1?500:600,0.06,'sine',0.12);
+  if(qAns1!==null&&qAns2!==null)revealQuestion();}
+function revealQuestion(){qLocked=true;const item=quizBank[qIdx];
+  markReveal('qoTop',item,qAns1);markReveal('qoBot',item,qAns2);
+  if(qAns1===item.c)qScore1++;if(qAns2===item.c)qScore2++;
+  if(qAns1===item.c||qAns2===item.c)rightSound();else wrongSound();
+  document.getElementById('qsTop').textContent='PINK '+qScore1;
+  document.getElementById('qsBot').textContent='CYAN '+qScore2;
+  setTimeout(()=>{qIdx++;if(qIdx>=quizCount)endQuiz();else loadQuestion();},1500);}
+function markReveal(containerId,item,chosen){const opts=document.getElementById(containerId).children;
+  for(let i=0;i<opts.length;i++){opts[i].classList.remove('dim');
+    if(i===item.c)opts[i].classList.add('correct');
+    else if(i===chosen)opts[i].classList.add('wrong');
+    else opts[i].classList.add('dim');}}
+function endQuiz(){running=false;quizUI.classList.remove('on');winSound();
+  let who;if(qScore1>qScore2)who='pink';else if(qScore2>qScore1)who='cyan';else who='tie';
+  recordWin('quiz',who);renderBoard();
+  const txt=who==='tie'?"IT'S A TIE":(who==='pink'?'PINK WINS':'CYAN WINS');
+  quizSetup.querySelector('#quizInfo').innerHTML='<div class="winner">'+txt+'</div>PINK '+qScore1+' &nbsp;—&nbsp; CYAN '+qScore2;
+  document.getElementById('quizStart').textContent='PLAY AGAIN';show(quizSetup);}
 
-/* menu picks */
-document.getElementById('pickHockey').onclick=()=>{ try{if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){} show(hockeySetup); };
-document.getElementById('pickTap').onclick=()=>{ try{if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){} show(tapSetup); };
+function loop(){if(running){if(mode==='hockey'){updateHockey();drawHockey();}else if(mode==='tap'){drawTap();}}requestAnimationFrame(loop);}
+function show(el){[menu,hockeySetup,tapSetup,quizSetup].forEach(s=>s.classList.add('hidden'));quizUI.classList.remove('on');if(el){el.classList.remove('hidden');if(el===menu)renderBoard();}}
+
+document.getElementById('pickHockey').onclick=()=>{ensureAudio();show(hockeySetup);};
+document.getElementById('pickTap').onclick=()=>{ensureAudio();show(tapSetup);};
+document.getElementById('pickQuiz').onclick=()=>{ensureAudio();show(quizSetup);};
 document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{running=false;mode=null;show(menu);});
 
-/* hockey setup */
-document.querySelectorAll('#scorebtns button').forEach(b=>b.onclick=()=>{
-  target=+b.dataset.t; document.querySelectorAll('#scorebtns button').forEach(x=>x.style.opacity=0.5); b.style.opacity=1;});
-document.getElementById('hockeyStart').onclick=()=>{
-  mode='hockey'; score1=0;score2=0; resize(); resetPositions(true);
-  show(null); running=true; serve(Math.random()<0.5?1:-1);
-};
-function endHockey(){
-  running=false; winSound();
-  const who=score1>=target?'PINK WINS':'CYAN WINS';
-  hockeySetup.querySelector('#hockeyInfo').innerHTML='<div class="winner">'+who+'</div>'+score1+' &nbsp;—&nbsp; '+score2;
-  document.getElementById('hockeyStart').textContent='PLAY AGAIN';
-  document.querySelectorAll('#scorebtns button').forEach(x=>x.style.opacity=1);
-  show(hockeySetup);
-}
+document.querySelectorAll('#scorebtns button').forEach(b=>b.onclick=()=>{target=+b.dataset.t;document.querySelectorAll('#scorebtns button').forEach(x=>x.style.opacity=0.5);b.style.opacity=1;});
+document.getElementById('hockeyStart').onclick=()=>{mode='hockey';score1=0;score2=0;resize();resetPositions(true);show(null);running=true;serve(Math.random()<0.5?1:-1);};
+function endHockey(){running=false;winSound();const who=score1>=target?'pink':'cyan';recordWin('hockey',who);
+  hockeySetup.querySelector('#hockeyInfo').innerHTML='<div class="winner">'+(who==='pink'?'PINK WINS':'CYAN WINS')+'</div>'+score1+' &nbsp;—&nbsp; '+score2;
+  document.getElementById('hockeyStart').textContent='PLAY AGAIN';document.querySelectorAll('#scorebtns button').forEach(x=>x.style.opacity=1);show(hockeySetup);}
 
-/* tap setup */
-document.querySelectorAll('#tapScoreBtns button').forEach(b=>b.onclick=()=>{
-  tapTarget=+b.dataset.t; document.getElementById('tapTargetLabel').textContent=tapTarget;
-  document.querySelectorAll('#tapScoreBtns button').forEach(x=>x.style.opacity=0.5); b.style.opacity=1;});
-document.getElementById('tapStart').onclick=()=>{
-  mode='tap'; tapScore1=0;tapScore2=0; resize(); show(null); running=true; startTapRound();
-};
-function endTap(){
-  running=false; winSound();
-  const who=tapScore1>tapScore2?'PINK WINS':'CYAN WINS';
-  tapSetup.querySelector('#tapInfo').innerHTML='<div class="winner">'+who+'</div>PINK '+tapScore1+' &nbsp;—&nbsp; CYAN '+tapScore2;
-  document.getElementById('tapStart').textContent='PLAY AGAIN';
-  show(tapSetup);
-}
+document.querySelectorAll('#tapScoreBtns button').forEach(b=>b.onclick=()=>{tapTarget=+b.dataset.t;document.getElementById('tapTargetLabel').textContent=tapTarget;document.querySelectorAll('#tapScoreBtns button').forEach(x=>x.style.opacity=0.5);b.style.opacity=1;});
+document.getElementById('tapStart').onclick=()=>{mode='tap';tapScore1=0;tapScore2=0;resize();show(null);running=true;startTapRound();};
+function endTap(){running=false;winSound();const who=tapScore1>tapScore2?'pink':'cyan';recordWin('tap',who);
+  tapSetup.querySelector('#tapInfo').innerHTML='<div class="winner">'+(who==='pink'?'PINK WINS':'CYAN WINS')+'</div>PINK '+tapScore1+' &nbsp;—&nbsp; CYAN '+tapScore2;
+  document.getElementById('tapStart').textContent='PLAY AGAIN';show(tapSetup);}
 
-resize(); loop();
+document.querySelectorAll('#quizCountBtns button').forEach(b=>b.onclick=()=>{quizCount=+b.dataset.q;document.querySelectorAll('#quizCountBtns button').forEach(x=>x.style.opacity=0.5);b.style.opacity=1;});
+document.getElementById('quizStart').onclick=()=>startQuiz();
+
+resize();renderBoard();loop();
 </script>
 </body>
 </html>
